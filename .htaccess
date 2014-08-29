@@ -1,3 +1,11 @@
+
+######
+#
+# DO NOT REPLACE THIS FILE WITH 
+# curl http://s.gonze.com/starter.txt > .htaccess
+#
+######
+
 RewriteEngine On
 
 RewriteRule ^starter.txt$ starter.php [L]
@@ -7,6 +15,7 @@ RewriteRule ^URL_TO_SHORTEN$ http://s.gonze.com [R,L]
 # replace some URL_TO_SHORTEN below with the
 # URL you want to shorten.
 
+RewriteRule ^jzPqF$ http://tinyurl.com/ [R,L]
 RewriteRule ^dtc8g$ URL_TO_SHORTEN [R,L]
 RewriteRule ^CvxRh$ URL_TO_SHORTEN [R,L]
 RewriteRule ^kWnyd$ URL_TO_SHORTEN [R,L]

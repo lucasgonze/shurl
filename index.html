@@ -23,7 +23,7 @@
         <li>Create dedicated domain on an Apache server that supports .htaccess</li>
         <li>ssh to root directory there</li>
         <li>curl
-          <a href="http://s.gonze.com/starter">http://s.gonze.com/starter</a> &gt; .htaccess</li>
+          <a href="http://s.gonze.com/starter.txt">http://s.gonze.com/starter.txt</a> &gt; .htaccess</li>
         <li>When you want to shorten a URL, edit .htaccess. Replace any URL_TO_SHORTEN with the long URL.</li>
       </ol>
       <h2 id="how-it-works">How It Works</h2>
@@ -36,6 +36,7 @@ RewriteRule ^jzPqF$ http://tinyurl.com/ [R,L]
 # the next short URL I will create is s.gonze.com/esW7j
 RewriteRule ^esW7j$ URL_TO_SHORTEN [R,L]</code></pre>
       <p>The trick is that the short URLs are not serial numbers, like integers from 1-10,000. This would be easy for anybody to spider, and that would be a privacy loss. Using random strings makes them a lot harder to guess, which more or less defeats spiders.</p>
+      <p>(Note that the short URLs in starter.txt are different for every request).</p>
       <footer>
         <hr>
         <p>Made by Lucas Gonze at
