@@ -1,48 +1,53 @@
 <!doctype html>
 <html>
-  <head>
-    <meta name="charset" content="utf-8" />
-    <title>DIY Shortener</title>
-    <meta name="description" content="Minimal static indie web URL shortener" />
-    <link href="bootstrap.min.css" rel="stylesheet">
-    <link href="http://bootswatch.com/readable/bootstrap.min.css" rel="stylesheet">
-    <link href="./main.css" rel="stylesheet">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width">
-  </head>
-  <body>
-    <div class="container">
-      <nav>
-        <h1>DIY URL Shortener</h1>
-        <p>Minimal static indie-web URL shortener</p>
-        <hr>
-      </nav>
-      <p class="well">Follow these steps to create your own personal URL shortener. This method uses no database or any scripts. Redirects are fast and reliable. Your setup should last for years with no maintenance.</p>
-      <h2 id="do-this">Do This</h2>
-      <ol>
-        <li>Create dedicated domain on an Apache server that supports .htaccess</li>
-        <li>ssh to root directory there</li>
-        <li>curl
-          <a href="http://s.gonze.com/starter.txt">http://s.gonze.com/starter.txt</a> &gt; .htaccess</li>
-        <li>When you want to shorten a URL, edit .htaccess. Replace any URL_TO_SHORTEN with the long URL.</li>
-      </ol>
-      <h2 id="how-it-works">How It Works</h2>
-      <p>My shortener is at s.gonze.com. I already own gonze.com, so adding a subdomain is easy. I use a dedicated subdomain because I don&#39;t want the big .htaccess file to slow down other pages.</p>
-      <p>These are the important lines in .htaccess at s.gonze.com:</p>
-      <pre><code># enable rewrite rules
-RewriteEngine On
-# example: if somebody requests s.gonze.com/jzPqF, send them to tinyurl.com/
-RewriteRule ^jzPqF$ http://tinyurl.com/ [R,L]
-# the next short URL I will create is s.gonze.com/esW7j
-RewriteRule ^esW7j$ URL_TO_SHORTEN [R,L]</code></pre>
-      <p>The trick is that the short URLs are not serial numbers, like integers from 1-10,000. This would be easy for anybody to spider, and that would be a privacy loss. Using random strings makes them a lot harder to guess, which more or less defeats spiders.</p>
-      <p>(Note that the short URLs in starter.txt are different for every request).</p>
-      <footer>
-        <hr>
-        <p>Made by Lucas Gonze at
-          <a href="http://indiewebcamp.com/events/2014-08-27-homebrew-website-club">Homebrew Website Club, August 27 2014</a> .</p>
-      </footer>
-    </div>
-    <script src="main.js" async></script>
-  </body>
-</html>
+<head>
+	<meta name="charset" content="utf-8" />
+	<title>A Private URL Shortener</title>
+	<meta name="description" content="Minimal static indie web URL shortener" />
+	<link href="bootstrap.min.css" rel="stylesheet">
+	<link href="http://bootswatch.com/superhero/bootstrap.min.css" rel="stylesheet">
+	<link href="./main.css" rel="stylesheet">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="viewport" content="width=device-width">
+</head>
+<body>
+	<div class="container">
+		<nav>
+			<span style="float:right"><big><a class="btn btn-default" href="https://news.ycombinator.com/item?id=8240618">Discuss</a></big></span>
+			<h1>Private URL Shortener</h1>
+			<p class="boast"><em><a href="http://www.staticapps.org/articles/defining-static-web-apps">Static App</a> &bull; <a href="http://indiewebcamp.com/">IndieWeb</a> &bull; <a href="http://personal-clouds.org">Personal Cloud</a></em></p>
+			<hr>
+		</nav>
+
+		<div class="jumbotron">
+			<h2>Do This:</h2>
+			<ol>
+				<li>Create dedicated domain on an Apache server that supports .htaccess</li>
+				<li>ssh to root directory there</li>
+				<li>curl
+					<a href="http://s.gonze.com/starter.txt">http://s.gonze.com/starter.txt</a> &gt; .htaccess</li>
+				<li>When you want to shorten a URL, edit .htaccess. Replace any URL_TO_SHORTEN with the long URL.</li>
+			</ol>
+		</div>
+
+		<div class="steps">
+			<h2>Why is this a good method?</h2>
+			<ul>
+				<li>Your redirects should last for years with no maintenance or security problems. The data is in a configuration file, so there are no complex components, like databases or scripts, to break down.</li>
+				<li>Your links are hard to spider. The short URLs aren't predictable serial numbers, they are random strings.</li>
+			</ul>
+			
+		</div>		
+
+		<hr>
+
+		<div>
+
+			<footer>
+				<p>Made by Lucas Gonze at
+					<a href="http://indiewebcamp.com/events/2014-08-27-homebrew-website-club">Homebrew Website Club, August 27 2014</a> .</p>
+				</footer>
+			</div>
+			<script src="main.js" async></script>
+		</body>
+		</html>

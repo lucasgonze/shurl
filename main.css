@@ -1,1 +1,20 @@
 
+p.boast, p.boast a {
+	color: #4E5D6C;
+	font-size: 110%;
+}
+p.boast a:hover {
+	decoration: underline;	
+}
+
+
+.jumbotron li, .steps li {
+	font-size: 200%;
+}
+.steps li {
+	padding-top: 1em
+}
+
+footer {
+	color: #4E5D6C;
+}

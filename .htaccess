@@ -16,8 +16,8 @@ RewriteRule ^URL_TO_SHORTEN$ http://s.gonze.com [R,L]
 # URL you want to shorten.
 
 RewriteRule ^jzPqF$ http://tinyurl.com/ [R,L]
-RewriteRule ^dtc8g$ URL_TO_SHORTEN [R,L]
-RewriteRule ^CvxRh$ URL_TO_SHORTEN [R,L]
+RewriteRule ^dtc8g$ https://www.linkedin.com/profile/view?id=23689&authType=name&authToken=sGoY&locale=en_US&pvs=pp&trk=ppro_viewmore [R,L]
+RewriteRule ^CvxRh$ http://www.iftf.org/our-work/global-landscape/ten-year-forecast/inventing-a-new-internet/ [R,L]
 RewriteRule ^kWnyd$ URL_TO_SHORTEN [R,L]
 RewriteRule ^vKduQ$ URL_TO_SHORTEN [R,L]
 RewriteRule ^WLiBK$ URL_TO_SHORTEN [R,L]
