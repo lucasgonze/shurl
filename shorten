@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# NEXT STEPS:
+# Implement config parameters documented below
+# Create public repo on Github
+# Rewrite documentation
+
+# after initial dev, make this come from script param $1
+URL_TO_SHORTEN="$1"
+if [ "$1" == "" -o "$1" == "-h" -o "$1" == "--help" ]; then
+	echo "Usage: shorten URL-TO-SHORTEN"
+	exit 1
+fi
+
+# configuration parameters
+# fixme: settable as parameters or config file
+SHORTENER_BASE="http://s.gonze.com/"
+SSH_ADDRESS="lgonze@gonze.com"
+HTACCESS_PATH="/home/lgonze/s.gonze.com/.htaccess"
+
+#
+#  generate a random post slug:
+#  checks for a 404 on that post slug on the shortener web server
+#  if not a 404, loop until 404 found
+#
+
+function check_slug_uniqueness {
+	local count_of_404s=`curl -I $1 | head -1 | grep "404 Not Found" | wc -l | sed 's/[^0-9]//g'`
+	expr $count_of_404s = 1
+	return $?
+}
+
+function generate_random_slug {
+	local chars="0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	local chars_len=`echo -n $chars | wc -c`
+	local slug
+	for i in {1..5}
+	do 
+		rand_char_int=`expr $RANDOM % $chars_len`
+		rand_char=`echo $chars | cut -c $rand_char_int`
+		slug="$slug""$rand_char"
+	done
+	echo $slug	
+}
+
+SLUG=`generate_random_slug`
+SHORTENED="$SHORTENER_BASE$SLUG"
+until [[ `check_slug_uniqueness $SHORTENER_BASE` ]]; do
+	SLUG=`generate_random_slug`
+	SHORTENED="$SHORTENER_BASE/$SLUG"
+done
+
+#
+# . append shortened URL to .htaccess:
+#  ssh to server
+#  append rewrite rule to .htaccess
+#
+
+rule="RewriteRule ^$SLUG\$ $URL_TO_SHORTEN [R,L]"
+ssh "$SSH_ADDRESS" "echo '$rule' >> $HTACCESS_PATH"
+
+if [[ $? == 0 ]]; then
+	echo $SHORTENED
+else
+	echo "SSH failure"
+	exit 1
+fi
+
+
