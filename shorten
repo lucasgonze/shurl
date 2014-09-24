@@ -2,8 +2,10 @@
 
 # NEXT STEPS:
 # Implement config parameters documented below
+# Don't re-mint URLs for existing redirects
 # Create public repo on Github
 # Rewrite documentation
+
 
 # after initial dev, make this come from script param $1
 URL_TO_SHORTEN="$1"
