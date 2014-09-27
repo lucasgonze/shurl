@@ -2,10 +2,9 @@
 
 # NEXT STEPS:
 # Implement config parameters documented below
-# Don't re-mint URLs for existing redirects
+# Error checking, tests, initialization
 # Create public repo on Github
-# Rewrite documentation
-
+# New documentation
 
 # after initial dev, make this come from script param $1
 URL_TO_SHORTEN="$1"
@@ -27,7 +26,7 @@ HTACCESS_PATH="/home/lgonze/s.gonze.com/.htaccess"
 #
 
 function check_slug_uniqueness {
-	local count_of_404s=`curl -I $1 | head -1 | grep "404 Not Found" | wc -l | sed 's/[^0-9]//g'`
+	local count_of_404s=`curl --silent -I $1 | head -1 | grep "404 Not Found" | wc -l | sed 's/[^0-9]//g'`
 	expr $count_of_404s = 1
 	return $?
 }
@@ -58,14 +57,27 @@ done
 #  append rewrite rule to .htaccess
 #
 
-rule="RewriteRule ^$SLUG\$ $URL_TO_SHORTEN [R,L]"
-ssh "$SSH_ADDRESS" "echo '$rule' >> $HTACCESS_PATH"
-
-if [[ $? == 0 ]]; then
-	echo $SHORTENED
+found=`ssh "$SSH_ADDRESS" "grep '$URL_TO_SHORTEN' '$HTACCESS_PATH'"`
+if [ $? == 0 ]
+	then
+	# We found a saved URL for this item. Show it.
+	# 14 is the char position after "RewriteRule ^". 18 is last char in saved stub.
+	# head -1 is in case there are more than one previously saved versions
+	saved=`echo "$found" | head -1 | cut -c 14-18`
+	echo "$SHORTENER_BASE$saved"
 else
-	echo "SSH failure"
-	exit 1
+	# This URL hasn't yet been saved. Add it.
+	rule="RewriteRule ^$SLUG\$ $URL_TO_SHORTEN [R,L]"
+	ssh "$SSH_ADDRESS" "echo '$rule' >> '$HTACCESS_PATH'"
+
+	if [[ $? == 0 ]]; then
+		echo $SHORTENED
+	else
+		echo "SSH failure"
+		exit 1
+	fi
+
 fi
+
 
 
