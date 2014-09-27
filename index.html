@@ -33,13 +33,19 @@
 
 <p>Under the hood, the trick is that the Apache mod_rewrite file is used to store rewrites. The privacy of your shortened URLs is protected by the fact that short URLs in this system are random strings, not serial numbers, so third parties can't spider them.</p>
 
-The entire system is contained in a single shell script, <code>shurl</code>. On first run it will create a configuration file. Edit the file to provide:
+<div>The entire system is contained in a single shell script, <code>shurl</code>. On first run it will create a configuration file. Edit the file to provide:
+</div>
 
-1. The public URL at which your shortener will be hosted. 
-2. SSH address for your web server
-3. Path to .htaccess in your web server's file system.
+<ol>
+  <li>The public URL at which your shortener will be hosted </li>
+  <li>SSH address for your web server</li>
+  <li>Path to .htaccess in your web server's file system</li>
+  </ol>
 
-From that point on, shorten a url like this: <code>shurl [LONG URL TO SHORTEN]</code>.
+<p>From that point on, shorten a url like this:<br>
+<code>shurl [LONG URL TO SHORTEN]</code>.
+  
+</p>
 
 </section>
 <footer>
