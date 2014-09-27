@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Shurl by lucasgonze</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Shurl</h1>
+        <p>The no-database URL shortener </p>
+
+        <p class="view"><a href="https://github.com/lucasgonze/shurl">View the Project on GitHub <small>lucasgonze/shurl</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/lucasgonze/shurl/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/lucasgonze/shurl/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/lucasgonze/shurl">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a name="shurl" class="anchor" href="#shurl"><span class="octicon octicon-link"></span></a>shurl</h1>
+
+<p>URL shortener</p>
+
+<p>This app is special in that it uses the Apache mod_rewrite file to store rewrites. There is no database, only a static file. There are no complex components to break down or be maintained.</p>
+
+<p>Your rewrites should last for a long long time with little maintenance or security problems.</p>
+
+<p>The system works using a client-side console app which modifies .htaccess on your server. The first time you run it, </p>
+
+<p>Do This:</p>
+
+<pre><code>Create dedicated domain on an Apache server that supports .htaccess
+ssh to root directory there
+curl http://s.gonze.com/starter.txt &gt; .htaccess
+When you want to shorten a URL, edit .htaccess. Replace any URL_TO_SHORTEN with the long URL.
+</code></pre>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/lucasgonze">lucasgonze</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
