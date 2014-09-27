@@ -1,23 +1,61 @@
 #!/bin/bash
 
 # NEXT STEPS:
-# Implement config parameters documented below
 # Error checking, tests, initialization
 # Create public repo on Github
 # New documentation
 
-# after initial dev, make this come from script param $1
-URL_TO_SHORTEN="$1"
 if [ "$1" == "" -o "$1" == "-h" -o "$1" == "--help" ]; then
-	echo "Usage: shorten URL-TO-SHORTEN"
+	echo "Usage: $0 [LONG URL TO SHORTEN]"
 	exit 1
 fi
+URL_TO_SHORTEN="$1"
 
-# configuration parameters
-# fixme: settable as parameters or config file
-SHORTENER_BASE="http://s.gonze.com/"
-SSH_ADDRESS="lgonze@gonze.com"
-HTACCESS_PATH="/home/lgonze/s.gonze.com/.htaccess"
+# process config file
+CFG=~/.shurl
+if [[ -f $CFG ]]
+	then
+
+	for param in SHORTENER_BASE SSH_ADDRESS HTACCESS_PATH
+	do
+		$val=`grep ^$param= $CFG | sed 's/$param=//' | head -1`
+		if [ "$val" == "" ]
+			then
+			echo "Please set config param $param in $CFG"
+			exit 1
+		fi
+		$param=$val
+	done
+	
+	#fixme: check that each of the param values actually works
+		
+else
+	
+	echo "Configuration file $CFG not found."
+	echo
+	echo "You must be new here. To get started, edit $CFG."
+	
+	echo "
+	
+# This is the configuration file for shurl. See
+# http://https://github.com/lucasgonze/shurl
+
+# The public URL at which your shortener will be hosted. Must end with a slash.
+# The short slug for each long URL will be appended.
+#SHORTENER_BASE=http://your.shortener.com/
+
+# SSH address for your web server
+#SSH_ADDRESS=username@example.com
+
+# Path to .htaccess in your web server's file system. Your SSH
+# account must have write permissions to it. It must have been
+# initialized to hold "RewriteEngine On". This script will append
+# to the .htaccess file. Obviously, this assumes Apache.
+#HTACCESS_PATH=/home/username/your.shortener.com/.htaccess	
+	" > $CFG
+
+	exit 1
+fi
 
 #
 #  generate a random post slug:
