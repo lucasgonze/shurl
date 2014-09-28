@@ -22,13 +22,13 @@ if [[ -f $CFG ]]
 
 	for param in SHORTENER_BASE SSH_ADDRESS HTACCESS_PATH
 	do
-		$val=`grep ^$param= $CFG | sed 's/$param=//' | head -1`
+		val=`grep "^$param=" $CFG | sed "s/$param=//" | head -1`
 		if [ "$val" == "" ]
 			then
 			echo "Please set config param $param in $CFG"
 			exit 1
 		fi
-		$param=$val
+		export $param=$val
 	done
 	
 	#fixme: check that each of the param values actually works
