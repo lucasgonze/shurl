@@ -9,64 +9,83 @@
 # http://lucasgonze.github.io/shurl/
 # 
 
-if [ "$1" == "" -o "$1" == "-h" -o "$1" == "--help" ]; then
-	echo "Usage: $0 [LONG URL TO SHORTEN]"
-	exit 1
-fi
-URL_TO_SHORTEN="$1"
-
-# process config file
-CFG=~/.shurl
-if [[ -f $CFG ]]
-	then
-
-	for param in SHORTENER_BASE SSH_ADDRESS HTACCESS_PATH
-	do
-		val=`grep "^$param=" $CFG | sed "s/$param=//" | head -1`
-		if [ "$val" == "" ]
-			then
-			echo "Please set config param $param in $CFG"
-			exit 1
-		fi
-		export $param=$val
-	done
-	
-	#fixme: check that each of the param values actually works
-		
-else
-	
+function gen_config {
 	echo "Configuration file $CFG not found."
 	echo
-	echo "You must be new here. To get started, edit $CFG."
-	
+
+	# check that each of the param values actually works
+	echo "You must be new here. Starting configuration..."
+
+	echo
+	echo "Base URL for your shortener: "
+	echo "(For example http://example.com/)"
+	read SHORTENER_BASE	
+	echo "Testing $SHORTENER_BASE..."
+	curl --silent $SHORTENER_BASE > /dev/null
+	if [ $? != 0 ]
+		then
+		echo $SHORTENER_BASE is invalid
+		exit 1
+	fi
+
+	# make sure it ends in /
+	if [ `echo -n $SHORTENER_BASE | tail -c 1` != "/" ]
+		then
+		export SHORTENER_BASE=$SHORTENER_BASE"/"
+	fi
+
+	echo
+	echo "ssh address for your web server"
+	echo "(For example username@example.com)"
+	read SSH_ADDRESS
+	echo "echo testing $SSH_ADDRESS..."
+	ssh $SSH_ADDRESS "echo -n"
+	if [ $? != 0 ]
+		then
+		echo $SSH_ADDRESS is invalid
+		exit 1
+	fi
+
+	echo
+	echo "Path to .htaccess on your web server - probably server root"
+	echo "(For example /usr/local/apache/htdocs/.htaccess)"
+	read HTACCESS_PATH
+	echo "testing $HTACCESS_PATH..."
+	ssh $SSH_ADDRESS "test -w $HTACCESS_PATH"
+	if [ $? != 0 ]
+		then
+		echo "$HTACCESS_PATH at $SSH_ADDRESS doesn't exist, isn't a file, or isn't writable."
+		exit 1
+	fi
+
 	echo "
-	
+
 # This is the configuration file for shurl. See
 # http://https://github.com/lucasgonze/shurl
 
 # The public URL at which your shortener will be hosted. Must end with a slash.
 # The short slug for each long URL will be appended.
-#SHORTENER_BASE=http://your.shortener.com/
+SHORTENER_BASE=$SHORTENER_BASE
 
 # SSH address for your web server
-#SSH_ADDRESS=username@example.com
+SSH_ADDRESS=$SSH_ADDRESS
 
 # Path to .htaccess in your web server's file system. Your SSH
 # account must have write permissions to it. It must have been
 # initialized to hold "RewriteEngine On". This script will append
 # to the .htaccess file. Obviously, this assumes Apache.
-#HTACCESS_PATH=/home/username/your.shortener.com/.htaccess	
-	" > $CFG
+HTACCESS_PATH=$HTACCESS_PATH
+" > $CFG
 
-	exit 1
-fi
+	echo
+	echo "Your choices have been saved to $CFG"
+}
 
 #
 #  generate a random post slug:
 #  checks for a 404 on that post slug on the shortener web server
 #  if not a 404, loop until 404 found
 #
-
 function check_slug_uniqueness {
 	local count_of_404s=`curl --silent -I $1 | head -1 | grep "404 Not Found" | wc -l | sed 's/[^0-9]//g'`
 	expr $count_of_404s = 1
@@ -86,6 +105,39 @@ function generate_random_slug {
 	echo $slug	
 }
 
+#########
+# main
+#########
+
+if [ "$1" == "" -o "$1" == "-h" -o "$1" == "--help" ]; then
+	echo "Usage: $0 [LONG URL TO SHORTEN]"
+	exit 1
+fi
+URL_TO_SHORTEN="$1"
+
+# process config file
+CFG=~/.shurl
+if [[ -f $CFG ]]
+	then
+
+	for param in SHORTENER_BASE SSH_ADDRESS HTACCESS_PATH PASSED_TESTING
+	do
+		val=`grep "^$param=" $CFG | sed "s/$param=//" | head -1`
+		if [ "$val" == "" ]
+			then
+			echo "Please set config param $param in $CFG"
+			exit 1
+		fi
+		export $param=$val
+	done
+			
+else
+	gen_config
+fi
+
+#
+# create shortened URL
+#
 SLUG=`generate_random_slug`
 SHORTENED="$SHORTENER_BASE$SLUG"
 until [[ `check_slug_uniqueness $SHORTENER_BASE` ]]; do
@@ -98,7 +150,6 @@ done
 #  ssh to server
 #  append rewrite rule to .htaccess
 #
-
 found=`ssh "$SSH_ADDRESS" "grep '$URL_TO_SHORTEN' '$HTACCESS_PATH'"`
 if [ $? == 0 ]
 	then
