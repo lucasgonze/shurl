@@ -9,12 +9,12 @@
 # http://lucasgonze.github.io/shurl/
 # 
 
-# fixme: Have this script work when run locally and when run via ssh. Right now it only makes sense when run on the web server. Basically need to merge logic with the original "shurl" script, which only works remotely via ssh.
+# fixme: Have this script work when run locally *and/or* when run via ssh. Right now it only makes sense when run on the web server. Basically need to merge logic in shurl-sderver with the original "shurl" script, which only works remotely via ssh.
 
 # Security note: since this script injects URLs to shorten into a configuration file, it is possible to inject malicious strings that are not intended as redirects. These malicious strings would jump out of the context of a plain old redirect and instead reconfigure the server for the purpose of breaking in. I haven't done much to prevent this, because it would be take time and I have no reason to think this script will be used for public services. If this is a problem for you, let me know that my time fixing it won't be wasted. In the meantime, your front end code can simply take care to ensure that URLs are escaped. 
 
 function log {
-	echo "LOG: ->$0<-  ->$1<-  ->$2<-  ->$3<-" 1>&2
+	echo "LOG: ->$0<-  ->$1<-  ->$2<-" 1>&2
 }
 
 function gen_config {
@@ -139,14 +139,7 @@ if [ "$1" == "" -o "$1" == "-h" -o "$1" == "--help" ]; then
 	exit 1
 fi
 url_to_shorten="$1"
-
-# if URLs contain spaces, it's a possible crack. Note that there are many other malicious things that could be injected. To improve security, this is the place to start.
-echo "$url_to_shorten" | grep "\s" - >/dev/null
-if [ $? ]
-	then
-	echo "URLs must not contain spaces"
-	exit 1
-fi
+# There are endless malicious things that could be injected. If this script is exposed to external hackers, the right thing to do is base 64 encode anything getting inserted in a rewrite rule. But that's work that is probably not worth the time, since this script probably won't find that kind of usage. But anyway, this spot in the script would be the place to check for malicious URLs.
 
 # process config file
 config_file=~/.shurl

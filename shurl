@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# shurl-server: the server-side part of shurl
+
 #
 # shurl: a URL shortener
 # 
@@ -34,29 +36,16 @@ function gen_config {
 		export SHORTENER_BASE=$SHORTENER_BASE"/"
 	fi
 
-	echo
-	echo "ssh address for your web server"
-	echo "(For example username@example.com)"
-	read SSH_ADDRESS
-	echo "echo testing $SSH_ADDRESS..."
-	ssh $SSH_ADDRESS "echo -n"
-	if [ $? != 0 ]
-		then
-		echo $SSH_ADDRESS is invalid
-		exit 1
-	fi
-
-	echo
-	echo "Path to .htaccess on your web server - probably server root"
-	echo "(For example /usr/local/apache/htdocs/.htaccess)"
+	echo "Path to .htaccess on your web server?"
 	read HTACCESS_PATH
 	echo "testing $HTACCESS_PATH..."
-	ssh $SSH_ADDRESS "test -w $HTACCESS_PATH"
+	test -w "$HTACCESS_PATH"
 	if [ $? != 0 ]
 		then
-		echo "$HTACCESS_PATH at $SSH_ADDRESS doesn't exist, isn't a file, or isn't writable."
+		echo "$HTACCESS_PATH doesn't exist, isn't a file, or isn't writable."
 		exit 1
 	fi
+	# fixme: if it doesn't exist, offer to create it
 
 	echo "
 
@@ -67,29 +56,16 @@ function gen_config {
 # The short slug for each long URL will be appended.
 SHORTENER_BASE=$SHORTENER_BASE
 
-# SSH address for your web server
-SSH_ADDRESS=$SSH_ADDRESS
-
 # Path to .htaccess in your web server's file system. Your SSH
 # account must have write permissions to it. It must have been
-# initialized to hold "RewriteEngine On". This script will append
+# initialized to hold 'RewriteEngine On'. This script will append
 # to the .htaccess file. Obviously, this assumes Apache.
 HTACCESS_PATH=$HTACCESS_PATH
+
 " > $CFG
 
 	echo
 	echo "Your choices have been saved to $CFG"
-}
-
-#
-#  generate a random post slug:
-#  checks for a 404 on that post slug on the shortener web server
-#  if not a 404, loop until 404 found
-#
-function check_slug_uniqueness {
-	local count_of_404s=`curl --silent -I $1 | head -1 | grep "404 Not Found" | wc -l | sed 's/[^0-9]//g'`
-	expr $count_of_404s = 1
-	return $?
 }
 
 function generate_random_slug {
@@ -105,6 +81,19 @@ function generate_random_slug {
 	echo $slug	
 }
 
+function process_config {
+	for param in SHORTENER_BASE HTACCESS_PATH
+	do
+		val=`grep "^$param=" $CFG | sed "s/$param=//" | head -1`
+		if [ "$val" == "" ]
+			then
+			echo "Please set config param $param in $CFG"
+			exit 1
+		fi
+		export $param=$val
+	done
+}
+
 #########
 # main
 #########
@@ -115,42 +104,50 @@ if [ "$1" == "" -o "$1" == "-h" -o "$1" == "--help" ]; then
 fi
 URL_TO_SHORTEN="$1"
 
+# security: since URL may contain third party content, it may inject an exploit
+# into .htaccess. So escape it.
+# fixme: do the escaping. See http://stackoverflow.com/questions/296536/urlencode-from-a-bash-script . 
+
 # process config file
 CFG=~/.shurl
 if [[ -f $CFG ]]
 	then
-
-	for param in SHORTENER_BASE SSH_ADDRESS HTACCESS_PATH PASSED_TESTING
-	do
-		val=`grep "^$param=" $CFG | sed "s/$param=//" | head -1`
-		if [ "$val" == "" ]
-			then
-			echo "Please set config param $param in $CFG"
-			exit 1
-		fi
-		export $param=$val
-	done
-			
+	process_config			
 else
 	gen_config
 fi
 
+# Note: we have two race conditions
 #
-# create shortened URL
-#
-SLUG=`generate_random_slug`
-SHORTENED="$SHORTENER_BASE$SLUG"
-until [[ `check_slug_uniqueness $SHORTENER_BASE` ]]; do
-	SLUG=`generate_random_slug`
-	SHORTENED="$SHORTENER_BASE/$SLUG"
-done
+# 1. If there is another process shortening this URL at the same time, it could 
+# get added twice. The solution is to avoid double-adds, but be robust when they happen.
+# 2. If another process generates the same slug for a different URL, ugh. Fu-ugh.
+# 
+# For 1 it is easier to be robust when it does happen than to prevent it. For 2
+# need to brainstorm.
 
-#
+# has this URL been added yet? If so, return prior shortened URL. In case 
+# of a double-add, that's fine - the second shortener will work too.
+found=`grep "$URL_TO_SHORTEN" "$HTACCESS_PATH"`
+if [ $? == 0 ]
+	then
+	# We found a saved URL for this item. Show it.
+	# 14 is the char position after "RewriteRule ^". 18 is last char in saved stub.
+	# head -1 is in case there are more than one previously saved versions
+	saved=`echo "$found" | head -1 | cut -c 14-18`
+	echo "$SHORTENER_BASE$saved"
+	exit 0
+fi
+
+# find an unused tiny URL
+SLUG=`generate_random_slug`
+while [[ `grep $SLUG $HTACCESS_PATH` ]]; do
+	SLUG=`generate_random_slug`
+done
+SHORTENED="$SHORTENER_BASE$SLUG"
+
 # . append shortened URL to .htaccess:
-#  ssh to server
-#  append rewrite rule to .htaccess
-#
-found=`ssh "$SSH_ADDRESS" "grep '$URL_TO_SHORTEN' '$HTACCESS_PATH'"`
+found=`grep '$URL_TO_SHORTEN' '$HTACCESS_PATH'`
 if [ $? == 0 ]
 	then
 	# We found a saved URL for this item. Show it.
@@ -161,12 +158,12 @@ if [ $? == 0 ]
 else
 	# This URL hasn't yet been saved. Add it.
 	rule="RewriteRule ^$SLUG\$ $URL_TO_SHORTEN [R,L]"
-	ssh "$SSH_ADDRESS" "echo '$rule' >> '$HTACCESS_PATH'"
+	echo '$rule' >> '$HTACCESS_PATH'
 
 	if [[ $? == 0 ]]; then
 		echo $SHORTENED
 	else
-		echo "SSH failure"
+		echo "Unable to append shortened URL to .htacce"
 		exit 1
 	fi
 
