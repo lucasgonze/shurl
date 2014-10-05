@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# shurl-server: the server-side part of shurl
-
 #
 # shurl: a URL shortener
 # 
@@ -11,12 +9,23 @@
 # http://lucasgonze.github.io/shurl/
 # 
 
+# This script must run on the same web server that is hosting the shortened URLs. That could change - it could be invoked locally on a laptop, then ssh to a server. If there is demand for that feature, let me know.
+
+# Security note: since this script injects URLs to shorten into a configuration file, it is possible to inject malicious strings that are not intended as redirects. These malicious strings would jump out of the context of a plain old redirect and instead reconfigure the server for the purpose of breaking in. I haven't done much to prevent this, because it would be take time and I have no reason to think this script will be used for public services. If this is a problem for you, let me know that my time fixing it won't be wasted. In the meantime, your front end code can simply take care to ensure that URLs are escaped. 
+
+function log {
+	echo "LOG: ->$0<-  ->$1<-  ->$2<-" 1>&2
+}
+
 function gen_config {
-	echo "Configuration file $CFG not found."
+	echo "Configuration file $config_file not found."
 	echo
 
 	# check that each of the param values actually works
 	echo "You must be new here. Starting configuration..."
+
+	# fixme: figure out whether this is for a local or remote web server
+	# if remote, gather the ssh address, save to config file, ssh to remote, test whether shurl exists there already, offer to install it there, install it there, run config generator there to gather .htaccess and base URL params.
 
 	echo
 	echo "Base URL for your shortener: "
@@ -36,19 +45,19 @@ function gen_config {
 		export SHORTENER_BASE=$SHORTENER_BASE"/"
 	fi
 
-	echo "Path to .htaccess on your web server?"
+	echo
+	echo "Path to .htaccess on your web server - probably server root"
+	echo "(For example /usr/local/apache/htdocs/.htaccess)"
 	read HTACCESS_PATH
 	echo "testing $HTACCESS_PATH..."
-	test -w "$HTACCESS_PATH"
+	test -w $HTACCESS_PATH
 	if [ $? != 0 ]
 		then
 		echo "$HTACCESS_PATH doesn't exist, isn't a file, or isn't writable."
 		exit 1
 	fi
-	# fixme: if it doesn't exist, offer to create it
 
 	echo "
-
 # This is the configuration file for shurl. See
 # http://https://github.com/lucasgonze/shurl
 
@@ -58,14 +67,37 @@ SHORTENER_BASE=$SHORTENER_BASE
 
 # Path to .htaccess in your web server's file system. Your SSH
 # account must have write permissions to it. It must have been
-# initialized to hold 'RewriteEngine On'. This script will append
+# initialized to hold "RewriteEngine On". This script will append
 # to the .htaccess file. Obviously, this assumes Apache.
 HTACCESS_PATH=$HTACCESS_PATH
-
-" > $CFG
+" > $config_file
 
 	echo
-	echo "Your choices have been saved to $CFG"
+	echo "Your choices have been saved to $config_file"
+}
+
+function process_config {
+	for param in SHORTENER_BASE SSH_ADDRESS HTACCESS_PATH
+	do
+		val=`grep "^$param=" $config_file | sed "s/$param=//" | head -1`
+		if [ "$param" != "" ]
+			then
+			export $param=$val
+		fi
+	done
+
+	# SSH_ADDRESS is optional. If left blank do the operation locally,
+	# if set do the operation on a remote server.
+	if [ "$SHORTENER_BASE" == "" ]
+		then
+		echo "Please set SHORTENER_BASE in $config_file"
+		exit 1
+	fi
+	if [ "$HTACCESS_PATH" == "" ]
+		then
+		echo "Please set HTACCESS_PATH in $config_file"
+		exit 1
+	fi
 }
 
 function generate_random_slug {
@@ -75,23 +107,30 @@ function generate_random_slug {
 	for i in {1..5}
 	do 
 		rand_char_int=`expr $RANDOM % $chars_len`
+		# cut needs 1-based instead of zero-based
+		rand_char_int=`expr $rand_char_int + 1`
 		rand_char=`echo $chars | cut -c $rand_char_int`
 		slug="$slug""$rand_char"
 	done
 	echo $slug	
 }
 
-function process_config {
-	for param in SHORTENER_BASE HTACCESS_PATH
-	do
-		val=`grep "^$param=" $CFG | sed "s/$param=//" | head -1`
-		if [ "$val" == "" ]
-			then
-			echo "Please set config param $param in $CFG"
-			exit 1
-		fi
-		export $param=$val
-	done
+# delete this new line we appended, if that's easy to implement. See
+# http://stackoverflow.com/questions/5410757/delete-a-line-containing-a-specific-string-using-sed
+function delete_rule {
+	local slug=$1
+	local rule=$2
+	sed -i "" "s/^RewriteRule \^$slug\$.*$//" /tmp/.htaccess
+}
+
+function find_previously_saved {
+	local found=`grep " $url_to_shorten " "$HTACCESS_PATH"`
+
+	# 14 is the char position after "RewriteRule ^". 18 is last char in saved stub.
+	# head -1 is in case there are more than one previously saved versions
+	local saved=`echo "$found" | head -1 | cut -c 14-18`
+
+	expr "$saved" "!=" "" >/dev/null && echo "$SHORTENER_BASE$saved"
 }
 
 #########
@@ -102,82 +141,66 @@ if [ "$1" == "" -o "$1" == "-h" -o "$1" == "--help" ]; then
 	echo "Usage: $0 [LONG URL TO SHORTEN]"
 	exit 1
 fi
-URL_TO_SHORTEN="$1"
-
-# security: since URL may contain third party content, it may inject an exploit
-# into .htaccess. So escape it.
-# fixme: do the escaping. See http://stackoverflow.com/questions/296536/urlencode-from-a-bash-script . 
+url_to_shorten="$1"
+# There are endless malicious things that could be injected. If this script is exposed to external hackers, the right thing to do is base 64 encode anything getting inserted in a rewrite rule. But that's work that is probably not worth the time, since this script probably won't find that kind of usage. But anyway, this spot in the script would be the place to check for malicious URLs.
 
 # process config file
-CFG=~/.shurl
-if [[ -f $CFG ]]
+config_file=~/.shurl
+if [[ -f $config_file ]]
 	then
-	process_config			
+	process_config
 else
 	gen_config
 fi
 
-# Note: we have two race conditions
-#
-# 1. If there is another process shortening this URL at the same time, it could 
-# get added twice. The solution is to avoid double-adds, but be robust when they happen.
-# 2. If another process generates the same slug for a different URL, ugh. Fu-ugh.
-# 
-# For 1 it is easier to be robust when it does happen than to prevent it. For 2
-# need to brainstorm.
+# do we have an SSH address in the config file? If so, execute shurl over there, like this:
+# ssh lgonze@gonze.com shurl/shurl-server http://example.com
 
-# has this URL been added yet? If so, return prior shortened URL. In case 
-# of a double-add, that's fine - the second shortener will work too.
-found=`grep "$URL_TO_SHORTEN" "$HTACCESS_PATH"`
-if [ $? == 0 ]
+
+# have we saved this URL before? Reuse the previous slug.
+# This reduces but doesn't eliminate race conditions on the same URL.
+prev_version=`find_previously_saved`
+if [ "$prev_version" != "" ]
 	then
-	# We found a saved URL for this item. Show it.
-	# 14 is the char position after "RewriteRule ^". 18 is last char in saved stub.
-	# head -1 is in case there are more than one previously saved versions
-	saved=`echo "$found" | head -1 | cut -c 14-18`
-	echo "$SHORTENER_BASE$saved"
+	echo "$prev_version"
 	exit 0
 fi
 
-# find an unused tiny URL
-SLUG=`generate_random_slug`
-while [[ `grep $SLUG $HTACCESS_PATH` ]]; do
-	SLUG=`generate_random_slug`
-done
-SHORTENED="$SHORTENER_BASE$SLUG"
+# add the RewriteRule
+while [ true ]
+do
+	# generate a slug
+	slug=`generate_random_slug`
 
-# . append shortened URL to .htaccess:
-found=`grep '$URL_TO_SHORTEN' '$HTACCESS_PATH'`
-if [ $? == 0 ]
-	then
-	# We found a saved URL for this item. Show it.
-	# 14 is the char position after "RewriteRule ^". 18 is last char in saved stub.
-	# head -1 is in case there are more than one previously saved versions
-	saved=`echo "$found" | head -1 | cut -c 14-18`
-	echo "$SHORTENER_BASE$saved"
-else
-	# This URL hasn't yet been saved. Add it.
-	rule="RewriteRule ^$SLUG\$ $URL_TO_SHORTEN [R,L]"
-	echo '$rule' >> '$HTACCESS_PATH'
+	# reduce but don't eliminate race conditions
+	# where multiple processes generate the same
+	# random slug
+	grep "$slug" "$HTACCESS_PATH" && continue	
 
-	if [[ $? == 0 ]]; then
-		echo $SHORTENED
-	else
-		echo "Unable to append shortened URL to .htacce"
-		exit 1
+	# append shortened URL to .htaccess
+	rule="RewriteRule ^$slug\$ $url_to_shorten [R,L]"
+	echo "$rule" >> "$HTACCESS_PATH"
+
+	# n.b. it doesn't matter if the same URL is appended twice, because
+	# the second instance still works. So the race condition on that
+	# isn't a bug. But it does matter if the same slug was used twice,
+	# because the second instance won't redirect to the second long
+	# URL.
+
+	# so now we deal with race condition where another process
+	# appended this same slug between our check and our append
+	# note there's no way to know if we are the first or the Nth append!
+	slugcount=`grep "$slug" "$HTACCESS_PATH" | wc -l | sed 's/\s//g'`
+	if [ "$slugcount" -eq "1" ]
+		then
+		# no race condition - report success
+		echo "$SHORTENER_BASE$slug"
+		exit 0
 	fi
 
-fi
+	# yes race condition. Have all instances that got caught in it
+	# clean up and try again.
+	delete_rule "$slug" "$rule"
+done
 
-# Copyright (c) 2014 Lucas Gonze <lucas@gonze.com>
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-# 
-# 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-# 
-# 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
+# Copyright (c) 2014 Lucas Gonze <lucas@gonze.com>. All rights reserved. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

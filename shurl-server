@@ -9,7 +9,7 @@
 # http://lucasgonze.github.io/shurl/
 # 
 
-# fixme: Have this script work when run locally *and/or* when run via ssh. Right now it only makes sense when run on the web server. Basically need to merge logic in shurl-sderver with the original "shurl" script, which only works remotely via ssh.
+# This script must run on the same web server that is hosting the shortened URLs. That could change - it could be invoked locally on a laptop, then ssh to a server. If there is demand for that feature, let me know.
 
 # Security note: since this script injects URLs to shorten into a configuration file, it is possible to inject malicious strings that are not intended as redirects. These malicious strings would jump out of the context of a plain old redirect and instead reconfigure the server for the purpose of breaking in. I haven't done much to prevent this, because it would be take time and I have no reason to think this script will be used for public services. If this is a problem for you, let me know that my time fixing it won't be wasted. In the meantime, your front end code can simply take care to ensure that URLs are escaped. 
 
@@ -23,6 +23,9 @@ function gen_config {
 
 	# check that each of the param values actually works
 	echo "You must be new here. Starting configuration..."
+
+	# fixme: figure out whether this is for a local or remote web server
+	# if remote, gather the ssh address, save to config file, ssh to remote, test whether shurl exists there already, offer to install it there, install it there, run config generator there to gather .htaccess and base URL params.
 
 	echo
 	echo "Base URL for your shortener: "
@@ -149,6 +152,10 @@ if [[ -f $config_file ]]
 else
 	gen_config
 fi
+
+# do we have an SSH address in the config file? If so, execute shurl over there, like this:
+# ssh lgonze@gonze.com shurl/shurl-server http://example.com
+
 
 # have we saved this URL before? Reuse the previous slug.
 # This reduces but doesn't eliminate race conditions on the same URL.
