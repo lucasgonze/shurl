@@ -24,29 +24,45 @@
 </ul>
 </header>
 <section>
-<p>This URL shortener is unlike the others in that there is no database, so there isn't much to break or break into. It should last longer and require less work.</p>
-
-<p>The front end is a client-side console app which does the work of adding short URLs to the .htaccess file on your web server.</p>
-
-<p>Under the hood, the trick is that the Apache mod_rewrite file is used to store rewrites. The privacy of your shortened URLs is protected by the fact that short URLs in this system are random strings, not serial numbers, so third parties can't spider them.</p>
-
-<div>The entire system is contained in a single shell script, <code>shurl</code>. On first run it will create a configuration file. Edit the file to provide:
-</div>
-
+<p>This URL shortener is unlike the others in that:</p>
 <ol>
-  <li>The public URL at which your shortener will be hosted </li>
-  <li>SSH address for your web server</li>
-  <li>Path to .htaccess in your web server's file system</li>
-  </ol>
-
-<p>From that point on, shorten a url like this:<br>
-<code>shurl [LONG URL TO SHORTEN]</code>.
-  
-</p>
+<li>There is no database, so there isn't much to break or break into. It should last longer and require less work.</li>
+<li>Target market are people who want to host their own URL shortener.</li>
+<li>The front end runs from the command line.</li>
+</ol>
 
 <hr>
-<p>This is designed as a client-server system where the URL is added on a client machine, then propagates to a server machine. Would it be useful to have a mode for operating within a single machine, so that the command to add a URL is invoked in a shell on the web server? Comments welcome.
-</p>
+<p>The front end is a client-side console app named <code>shurl</code>. </p>
+
+<p>A typical session looks like this:</p>
+
+<pre><code>$ ./shurl 
+Usage: ./shurl [LONG URL TO SHORTEN]
+$ ./shurl http://example.com
+http://s.gonze.com/xICju
+</code></pre>
+
+<p>This app must run on the web server used to host shortened URLs. It should be run via ssh, and should not be reachable via the web.</p>
+
+<hr>
+
+<p>Under the hood, the Apache mod_rewrite file is used to store rewrites. There are no scripts made accessible to the web, and there is no database. This simplicity of design should make the system very durable.</p>
+
+<p>Short URLs in this system are random strings, rather than serial numbers, so they are hard to spider.</p>
+
+<hr>
+
+<p>Who would want this functionality? People who prefer to own their data and run their own software. People who want a <a href="http://personal-clouds.org/wiki/Main_Page">personal cloud</a>. People who want privacy for their shortened URLs. </p>
+
+<blockquote>
+<p>Cloud computing today typically means that we have to hand over our data to big companies who decide which features they give us (and sometimes force on us), and who can and do unilaterally change their terms of service on us whenever they like.</p>
+
+<p>What if instead, we could each have our own, personal cloud? Where we decide what data to put there and whom to share it with, where we decide which apps to run on it, and where we define the terms of service?</p>
+</blockquote>
+<p>a href="http://personal-clouds.org/wiki/Main_Page">personal-clouds.org</a></p>
+
+<hr>
+
 </section>
 <footer>
 <p>This project is maintained by <a href="https://github.com/lucasgonze">lucasgonze</a></p>
