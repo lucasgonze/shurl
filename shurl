@@ -115,8 +115,6 @@ function generate_random_slug {
 	echo $slug	
 }
 
-# delete this new line we appended, if that's easy to implement. See
-# http://stackoverflow.com/questions/5410757/delete-a-line-containing-a-specific-string-using-sed
 function delete_rule {
 	local slug=$1
 	local rule=$2
@@ -153,9 +151,8 @@ else
 	gen_config
 fi
 
-# do we have an SSH address in the config file? If so, execute shurl over there, like this:
-# ssh lgonze@gonze.com shurl/shurl-server http://example.com
-
+# future: do we have an SSH address in the config file? If so, execute shurl over there, like this:
+# ssh user@hostname shurl/shurl-server http://example.com
 
 # have we saved this URL before? Reuse the previous slug.
 # This reduces but doesn't eliminate race conditions on the same URL.
