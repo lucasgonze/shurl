@@ -1,0 +1,19 @@
+#/bin/bash
+
+# this is a hand-hacked way of invoking shurl
+# but it requires installation of the script on the remote server
+# 
+# better to 
+# ssh lgonze@gonze.com "bash -s" -- < ./shurl http://example.com
+# 
+# but then there is a bug in the configuration file generator,
+# which runs remotely and needs to need from the local console.
+# what should change is that the configs should be stored here, on
+# the client, and passed via command line to remote instance.
+
+# anyway, this is the old way:
+ssh "$SSH_USER@$SSH_DOMAIN" $PATH_TO_SHURL_ON_WEB_SERVER "$URL_TO_SHORTEN" | tee - | pbcopy 
+pbpaste
+echo "(It's in your clipboard)" >&2
+
+
