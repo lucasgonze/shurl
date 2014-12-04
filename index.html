@@ -15,7 +15,7 @@
 <div class="wrapper">
 <header>
 <h1>Shurl</h1>
-<p>The personal URL shortener </p>
+<p>Short URLs that will never ever break</p>
 <p class="view"><a href="https://github.com/lucasgonze/shurl">View the Project on GitHub <small>lucasgonze/shurl</small></a></p>
 <ul>
 <li><a href="https://github.com/lucasgonze/shurl/zipball/master">Download <strong>ZIP File</strong></a></li>
@@ -24,17 +24,20 @@
 </ul>
 </header>
 <section>
-<p>This URL shortener is unlike the others in that:</p>
+
+<p>URL shorteners are full of breakable components, so you can't be confident your links will work. Shurl maximizes reliability by getting rid of almost everything breakable.</p>
+
 <ol>
-<li>The front end runs from the command line.</li>
-<li>There is no database. Shortened URLs are stored in a web server configuration file.</li>
-<li>It is for people who want to host their own URL shortener.</li>
+<li>No database. (Shortened URLs are stored in a web server configuration file).</li>
+<li>No web form.  (To create new links, a client-side script SSHs into the web server).</li>
+<li>No scripts. (Once a short URL is created, it is dereferenced using only a vanilla web server).</li>
+<li>No security patches. (No attack surface means nothing to patch).</li>
 </ol>
 
 <hr>
 <h3>Console App</h3>
 
-<p>The front end is a client-side console app named <code>shurl</code>. </p>
+<p>Shurl may also appeal to people who like the Unix shell: the front end is a client-side console app named <code>shurl</code>. </p>
 
 <p>A typical session looks like this:</p>
 
