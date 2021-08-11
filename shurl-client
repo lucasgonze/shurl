@@ -10,6 +10,7 @@
 # which runs remotely and needs to need from the local console.
 # what should change is that the configs should be stored here, on
 # the client, and passed via command line to remote instance.
+# 
 
 # anyway, this is the old way:
 ssh "$SSH_USER@$SSH_DOMAIN" $PATH_TO_SHURL_ON_WEB_SERVER "$URL_TO_SHORTEN" | tee - | pbcopy 
